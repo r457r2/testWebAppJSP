@@ -8,7 +8,7 @@
          String name2 = request.getParameter("name2_input");
          if (name1 != null && name2 != null &&
              name1 != "" && name2 != "") {
-             TestDbBean.updateRecord(id, name1, name2);
+             TestDbController.updateRecord(id, name1, name2);
              response.sendRedirect("/TestWebApp");
          }
          else {

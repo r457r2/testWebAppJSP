@@ -3,7 +3,7 @@
         <title>TestWebApp</title>
     </head>
     <body>
-        <%@ page language="java" isELIgnored="false" import="com.mts.test.*,java.util.List"%>
+        <%@ page language="java" isELIgnored="false" import="com.mts.test.*, java.util.List, javax.naming.InitialContext, javax.sql.DataSource, java.sql.Connection"%>
         <%
             String errorResult = (String)request.getAttribute("action_result");
             if (errorResult != null)
@@ -61,7 +61,7 @@
             <%
                 String sortField = request.getParameter("field");
                 String sortOrder = request.getParameter("sortOrder");
-                List<Record> result = TestDbBean.getData(sortField, sortOrder);
+                List<Record> result = TestDbController.getData(sortField, sortOrder);
 
                 for (int i = 0; i < result.size(); i++) {
             %>

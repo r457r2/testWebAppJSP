@@ -1,12 +1,22 @@
 package com.mts.test;
 
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+
 /**
  * Created by r457r on 04.12.2016.
  * Test bean
  */
-public class TestDbBean {
+public class TestDbController {
     private static List<Record> data = new ArrayList<>();
      static {
         data.add(new Record(1, "Artur", "Bol"));
@@ -16,10 +26,11 @@ public class TestDbBean {
         data.add(new Record(5, "Ang", "Black"));
     }
 
-    public TestDbBean(){}
+    public TestDbController(){}
 
     public static List<Record> getData(String sortField, String sortOrder) {
-        List<Record> result = data;
+        List<Record> result = loadData();
+
 
         if (sortOrder != null && sortOrder.toUpperCase().equals("DESC"))
             result.sort((o1, o2) -> getRecVal(o2, sortField).compareTo(getRecVal(o1, sortField)));
@@ -29,18 +40,43 @@ public class TestDbBean {
         return result;
     }
 
+    private static List<Record> loadData() {
+        List<Record> result = new ArrayList<>();
+
+        try {
+            InitialContext initCtx = new InitialContext();
+            DataSource ds = (DataSource) initCtx.lookup("java:comp/env/jdbc/MySQLtest");
+            try (Connection con = ds.getConnection();
+                 Statement stm = con.createStatement();){
+
+                ResultSet res = stm.executeQuery("SELECT id, name1, name2 FROM naming_pairs;");
+                while (res.next()) {
+                    Record rec = new Record(res.getInt(1), res.getString(2), res.getString(3));
+                    result.add(rec);
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        } catch (NamingException e) {
+            e.printStackTrace();
+        }
+
+        return result;
+    }
+
+//"SELECT id, name1, name2 FROM naming_pairs ORDER BY name1;"
     public static Boolean addRecord(String name1, String name2) {
         data.add(new Record(0, name1, name2));
         return true;
     }
 
     public static Boolean deleteRecord(Integer id) {
-        return data.removeIf(record -> record.id == id);
+        return data.removeIf(record -> record.id.equals(id));
     }
 
     public static void updateRecord(Integer id, String name1, String name2) {
         data.replaceAll(record -> {
-            if (record.id == id) {
+            if (record.id.equals(id)) {
                 return new Record(id, name1, name2);
             } else {
                 return record;

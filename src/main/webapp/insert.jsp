@@ -5,7 +5,7 @@
 
       if (name1 != null && name2 != null &&
           name1 != "" && name2 != "") {
-              TestDbBean.addRecord(name1, name2);
+              TestDbController.addRecord(name1, name2);
       }
 
       response.sendRedirect("/TestWebApp");
