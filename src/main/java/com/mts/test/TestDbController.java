@@ -3,10 +3,7 @@ package com.mts.test;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,8 +46,6 @@ public class TestDbController {
         }
     }
 
-    private static List<Record> data = new ArrayList<>();
-
     public TestDbController(){}
 
     public static List<Record> getData(String sortField, String sortOrder, String method) throws SQLException, NamingException {
@@ -61,19 +56,14 @@ public class TestDbController {
         if (method != null && method.toLowerCase().equals("sql")) {
             switch (type) {
                 case Name1Asc:
-                    query = "SELECT id, name1, name2 FROM naming_pairs ORDER BY name1 ASC;";
-                    break;
+                    query = "SELECT id, name1, name2 FROM naming_pairs ORDER BY name1 ASC;"; break;
                 case Name1Desc:
-                    query = "SELECT id, name1, name2 FROM naming_pairs ORDER BY name1 DESC;";
-                    break;
+                    query = "SELECT id, name1, name2 FROM naming_pairs ORDER BY name1 DESC;"; break;
                 case Name2Asc:
-                    query = "SELECT id, name1, name2 FROM naming_pairs ORDER BY name2 ASC;";
-                    break;
+                    query = "SELECT id, name1, name2 FROM naming_pairs ORDER BY name2 ASC;"; break;
                 case Name2Desc:
-                    query = "SELECT id, name1, name2 FROM naming_pairs ORDER BY name1 DESC;";
-                    break;
-                case None:
-                    break;
+                    query = "SELECT id, name1, name2 FROM naming_pairs ORDER BY name2 DESC;"; break;
+                case None: break;
             }
             result = loadData(query);
         }
@@ -81,19 +71,14 @@ public class TestDbController {
             result = loadData(query);
             switch (type) {
                 case Name1Asc:
-                    result.sort((o1, o2) -> o1.name1.compareTo(o2.name1));
-                    break;
+                    result.sort((o1, o2) -> o1.name1.compareTo(o2.name1)); break;
                 case Name1Desc:
-                    result.sort((o1, o2) -> o2.name1.compareTo(o1.name1));
-                    break;
+                    result.sort((o1, o2) -> o2.name1.compareTo(o1.name1)); break;
                 case Name2Asc:
-                    result.sort((o1, o2) -> o1.name2.compareTo(o2.name2));
-                    break;
+                    result.sort((o1, o2) -> o1.name2.compareTo(o2.name2)); break;
                 case Name2Desc:
-                    result.sort((o1, o2) -> o2.name2.compareTo(o1.name2));
-                    break;
-                case None:
-                    break;
+                    result.sort((o1, o2) -> o2.name2.compareTo(o1.name2)); break;
+                case None: break;
             }
         }
 
@@ -105,6 +90,7 @@ public class TestDbController {
 
         InitialContext initCtx = new InitialContext();
         DataSource ds = (DataSource) initCtx.lookup("java:comp/env/jdbc/MySQLtest");
+
         Connection con = ds.getConnection();
         Statement stm = con.createStatement();
         ResultSet res = stm.executeQuery(query);
@@ -120,51 +106,45 @@ public class TestDbController {
         return result;
     }
 
-    public static Boolean addRecord(String name1, String name2) {
-        data.add(new Record(0, name1, name2));
-        return true;
+    public static void insertRecord(String name1, String name2) throws NamingException, SQLException {
+        InitialContext initCtx = new InitialContext();
+        DataSource ds = (DataSource) initCtx.lookup("java:comp/env/jdbc/MySQLtest");
+
+        Connection con = ds.getConnection();
+        PreparedStatement stm = con.prepareStatement("INSERT INTO naming_pairs(name1, name2) VALUES (?, ?);");
+        stm.setString(1, name1);
+        stm.setString(2, name2);
+        stm.executeUpdate();
+
+        stm.close();
+        con.close();
     }
 
-    public static Boolean deleteRecord(Integer id) {
-        return data.removeIf(record -> record.id.equals(id));
+    public static void deleteRecord(Integer id) throws NamingException, SQLException {
+        InitialContext initCtx = new InitialContext();
+        DataSource ds = (DataSource) initCtx.lookup("java:comp/env/jdbc/MySQLtest");
+
+        Connection con = ds.getConnection();
+        PreparedStatement stm = con.prepareStatement("DELETE FROM naming_pairs WHERE id = ?;");
+        stm.setInt(1, id);
+        stm.executeUpdate();
+
+        stm.close();
+        con.close();
     }
 
-    public static void updateRecord(Integer id, String name1, String name2) {
-        data.replaceAll(record -> {
-            if (record.id.equals(id)) {
-                return new Record(id, name1, name2);
-            } else {
-                return record;
-            }
-        });
-    }
+    public static void updateRecord(Integer id, String name1, String name2) throws NamingException, SQLException {
+        InitialContext initCtx = new InitialContext();
+        DataSource ds = (DataSource) initCtx.lookup("java:comp/env/jdbc/MySQLtest");
 
-    private static String getRecVal(Record rec, String valName) {
-        String res = "";
-        if (valName != null)
-            switch (valName) {
-                case "name1":
-                    res = rec.name1;
-                    break;
-                case "name2":
-                    res = rec.name2;
-                    break;
-            }
-        return res;
-    }
+        Connection con = ds.getConnection();
+        PreparedStatement stm = con.prepareStatement("UPDATE naming_pairs SET name1 = ?, name2 = ? WHERE id = ?;");
+        stm.setString(1, name1);
+        stm.setString(2, name2);
+        stm.setInt(3, id);
+        stm.executeUpdate();
 
-    @Override
-    public int hashCode() {
-        return super.hashCode();
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        return super.equals(obj);
-    }
-
-    @Override
-    public String toString() {
-        return super.toString();
+        stm.close();
+        con.close();
     }
 }
