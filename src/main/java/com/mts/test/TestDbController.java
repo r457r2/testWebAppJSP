@@ -8,63 +8,118 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Created by r457r on 04.12.2016.
  * Test bean
  */
+
 public class TestDbController {
-    private static List<Record> data = new ArrayList<>();
-     static {
-        data.add(new Record(1, "Artur", "Bol"));
-        data.add(new Record(2, "Barton", "Ark"));
-        data.add(new Record(3, "Berk", "Cole"));
-        data.add(new Record(4, "Code", "Dare"));
-        data.add(new Record(5, "Ang", "Black"));
+    private enum SortType {
+        None, Name1Asc, Name1Desc, Name2Asc, Name2Desc;
+
+        public static SortType countSortType(String sortField, String sortOrder) {
+            SortType type = SortType.None;
+            if (sortField != null && sortOrder != null) {
+                switch (sortField.toLowerCase()) {
+                    case "name1":
+                        switch (sortOrder.toLowerCase()) {
+                            case "asc":
+                                type = SortType.Name1Asc;
+                                break;
+                            case "desc":
+                                type = SortType.Name1Desc;
+                                break;
+                        }
+                        break;
+                    case "name2":
+                        switch (sortOrder.toLowerCase()) {
+                            case "asc":
+                                type = SortType.Name2Asc;
+                                break;
+                            case "desc":
+                                type = SortType.Name2Desc;
+                                break;
+                        }
+                        break;
+                }
+            }
+            return type;
+        }
     }
+
+    private static List<Record> data = new ArrayList<>();
 
     public TestDbController(){}
 
-    public static List<Record> getData(String sortField, String sortOrder) {
-        List<Record> result = loadData();
+    public static List<Record> getData(String sortField, String sortOrder, String method) throws SQLException, NamingException {
+        SortType type = SortType.countSortType(sortField, sortOrder);
+        List<Record> result;
+        String query = "SELECT id, name1, name2 FROM naming_pairs;";
 
-
-        if (sortOrder != null && sortOrder.toUpperCase().equals("DESC"))
-            result.sort((o1, o2) -> getRecVal(o2, sortField).compareTo(getRecVal(o1, sortField)));
-        else
-            result.sort((o1, o2) -> getRecVal(o1, sortField).compareTo(getRecVal(o2, sortField)));
-
-        return result;
-    }
-
-    private static List<Record> loadData() {
-        List<Record> result = new ArrayList<>();
-
-        try {
-            InitialContext initCtx = new InitialContext();
-            DataSource ds = (DataSource) initCtx.lookup("java:comp/env/jdbc/MySQLtest");
-            try (Connection con = ds.getConnection();
-                 Statement stm = con.createStatement();){
-
-                ResultSet res = stm.executeQuery("SELECT id, name1, name2 FROM naming_pairs;");
-                while (res.next()) {
-                    Record rec = new Record(res.getInt(1), res.getString(2), res.getString(3));
-                    result.add(rec);
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
+        if (method != null && method.toLowerCase().equals("sql")) {
+            switch (type) {
+                case Name1Asc:
+                    query = "SELECT id, name1, name2 FROM naming_pairs ORDER BY name1 ASC;";
+                    break;
+                case Name1Desc:
+                    query = "SELECT id, name1, name2 FROM naming_pairs ORDER BY name1 DESC;";
+                    break;
+                case Name2Asc:
+                    query = "SELECT id, name1, name2 FROM naming_pairs ORDER BY name2 ASC;";
+                    break;
+                case Name2Desc:
+                    query = "SELECT id, name1, name2 FROM naming_pairs ORDER BY name1 DESC;";
+                    break;
+                case None:
+                    break;
             }
-        } catch (NamingException e) {
-            e.printStackTrace();
+            result = loadData(query);
+        }
+        else {
+            result = loadData(query);
+            switch (type) {
+                case Name1Asc:
+                    result.sort((o1, o2) -> o1.name1.compareTo(o2.name1));
+                    break;
+                case Name1Desc:
+                    result.sort((o1, o2) -> o2.name1.compareTo(o1.name1));
+                    break;
+                case Name2Asc:
+                    result.sort((o1, o2) -> o1.name2.compareTo(o2.name2));
+                    break;
+                case Name2Desc:
+                    result.sort((o1, o2) -> o2.name2.compareTo(o1.name2));
+                    break;
+                case None:
+                    break;
+            }
         }
 
         return result;
     }
 
-//"SELECT id, name1, name2 FROM naming_pairs ORDER BY name1;"
+    private static List<Record> loadData(String query) throws NamingException, SQLException {
+        List<Record> result = new ArrayList<>();
+
+        InitialContext initCtx = new InitialContext();
+        DataSource ds = (DataSource) initCtx.lookup("java:comp/env/jdbc/MySQLtest");
+        Connection con = ds.getConnection();
+        Statement stm = con.createStatement();
+        ResultSet res = stm.executeQuery(query);
+
+        while (res.next()) {
+            Record rec = new Record(res.getInt(1), res.getString(2), res.getString(3));
+            result.add(rec);
+        }
+
+        stm.close();
+        con.close();
+
+        return result;
+    }
+
     public static Boolean addRecord(String name1, String name2) {
         data.add(new Record(0, name1, name2));
         return true;

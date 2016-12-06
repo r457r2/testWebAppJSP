@@ -3,7 +3,7 @@
         <title>TestWebApp</title>
     </head>
     <body>
-        <%@ page language="java" isELIgnored="false" import="com.mts.test.*, java.util.List, javax.naming.InitialContext, javax.sql.DataSource, java.sql.Connection"%>
+        <%@ page language="java" isELIgnored="false" import="com.mts.test.*, java.util.*, javax.naming.*, javax.sql.*, java.sql.*"%>
         <%
             String errorResult = (String)request.getAttribute("action_result");
             if (errorResult != null)
@@ -25,7 +25,6 @@
             <input type="submit" value="Insert">
         </form>
         <br>
-        <br>
         <form action="update.jsp" method="POST">
             <table border="2">
                 <tr>
@@ -42,14 +41,21 @@
             <input type="submit" value="Update">
         </form>
         <br>
-        <br>
 
-        <a href="/TestWebApp/?field=name1&sortOrder=ASC">Java ASC sort by name1</a>
-        <a href="/TestWebApp/?field=name1&sortOrder=DESC">Java DESC sort by name1</a>
-        <br>
-        <a href="/TestWebApp/?field=name2&sortOrder=ASC">Java ASC sort by name2</a>
-        <a href="/TestWebApp/?field=name2&sortOrder=DESC">Java DESC sort by name2</a>
-
+        <p>
+            <a href="/TestWebApp/?sortField=name1&sortOrder=ASC">Java ASC sort by name1</a>
+            <a href="/TestWebApp/?sortField=name1&sortOrder=DESC">Java DESC sort by name1</a>
+            <br>
+            <a href="/TestWebApp/?sortField=name2&sortOrder=ASC">Java ASC sort by name2</a>
+            <a href="/TestWebApp/?sortField=name2&sortOrder=DESC">Java DESC sort by name2</a>
+        </p>
+        <p>
+            <a href="/TestWebApp/?sortField=name1&sortOrder=ASC&method=SQL">SQL ASC sort by name1</a>
+            <a href="/TestWebApp/?sortField=name1&sortOrder=DESC&method=SQL">SQL DESC sort by name1</a>
+            <br>
+            <a href="/TestWebApp/?sortField=name2&sortOrder=ASC&method=SQL">SQL ASC sort by name2</a>
+            <a href="/TestWebApp/?sortField=name2&sortOrder=DESC&method=SQL">SQL DESC sort by name2</a>
+        </p>
 
         <table border="2">
             <tr>
@@ -59,9 +65,17 @@
                 <th>action</th>
             </tr>
             <%
-                String sortField = request.getParameter("field");
+                String sortField = request.getParameter("sortField");
                 String sortOrder = request.getParameter("sortOrder");
-                List<Record> result = TestDbController.getData(sortField, sortOrder);
+                String method = request.getParameter("method");
+                List<Record> result = new ArrayList<Record>();
+                try {
+                    result = TestDbController.getData(sortField, sortOrder, method);
+                } catch (SQLException e) { %>
+                    Error while working with db: <%= e.getMessage()%>
+                <% } catch (NamingException e) { %>
+                    Error while loading context with db credentials (be sure resource named "jdbc/MySQLtest"): <%= e.getMessage()%>
+                <%}
 
                 for (int i = 0; i < result.size(); i++) {
             %>
